@@ -1,0 +1,35 @@
+
+# Use LF line endings for text files
+* text=auto
+
+# Pixi lockfile
+pixi.lock text eol=lf
+pixi.toml text eol=lf
+
+# Python
+*.py text eol=lf
+
+# Configuration
+*.yaml text eol=lf
+*.yml text eol=lf
+*.toml text eol=lf
+
+# Documentation
+*.md text eol=lf
+
+# Shell scripts
+*.sh text eol=lf
+
+# Windows scripts
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary

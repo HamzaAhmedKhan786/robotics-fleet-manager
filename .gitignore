@@ -218,3 +218,121 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# ============================================================
+# Robotics Fleet Manager - Project-Specific Git Ignore Rules
+# ============================================================
+
+# ------------------------------------------------------------
+# Next.js / React / TypeScript
+# ------------------------------------------------------------
+node_modules/
+.next/
+out/
+.turbo/
+.vercel/
+*.tsbuildinfo
+next-env.d.ts
+
+# Frontend testing
+playwright-report/
+test-results/
+blob-report/
+storybook-static/
+
+# ------------------------------------------------------------
+# JavaScript package managers
+# ------------------------------------------------------------
+.npm/
+.pnpm-store/
+.yarn/cache/
+.yarn/unplugged/
+.yarn/build-state.yml
+.yarn/install-state.gz
+
+# Keep dependency lockfiles committed:
+# package-lock.json
+# pnpm-lock.yaml
+# yarn.lock
+
+# ------------------------------------------------------------
+# Environment and secrets
+# ------------------------------------------------------------
+.env.*
+!.env.example
+!.env.*.example
+
+*.pem
+*.key
+*.p12
+*.pfx
+
+secrets/
+credentials/
+
+# ------------------------------------------------------------
+# Docker
+# ------------------------------------------------------------
+docker-compose.override.yml
+compose.override.yaml
+
+# Local container data
+docker-data/
+postgres-data/
+redis-data/
+
+# ------------------------------------------------------------
+# Robotics simulation
+# ------------------------------------------------------------
+simulation-output/
+simulation-recordings/
+simulation-cache/
+
+# Generated robot telemetry
+telemetry-data/
+*.bag
+*.db3
+*.mcap
+
+# ROS 2 generated directories
+colcon_build/
+colcon_install/
+colcon_log/
+
+# ------------------------------------------------------------
+# Application-generated files
+# ------------------------------------------------------------
+logs/
+tmp/
+temp/
+uploads/
+artifacts/
+
+# Local SQLite databases
+*.sqlite
+*.sqlite3
+
+# ------------------------------------------------------------
+# Operating systems
+# ------------------------------------------------------------
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ------------------------------------------------------------
+# IDE
+# ------------------------------------------------------------
+.idea/
+.vscode/*
+
+# Keep shared VS Code configuration
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+
+# ------------------------------------------------------------
+# Pixi - IMPORTANT
+# ------------------------------------------------------------
+# Keep pixi.toml and pixi.lock committed.
+# Local Pixi environments are ignored by the Python template.
