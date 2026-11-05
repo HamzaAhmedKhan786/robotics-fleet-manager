@@ -9,8 +9,6 @@ from apps.backend.models.robot import RobotStatus
 
 
 class RobotCreate(BaseModel):
-    """Data required to register a robot."""
-
     name: str = Field(min_length=1, max_length=100)
     battery_level: float = Field(default=100.0, ge=0, le=100)
     current_location: str | None = Field(
@@ -20,9 +18,23 @@ class RobotCreate(BaseModel):
     )
 
 
-class RobotResponse(BaseModel):
-    """Robot data returned by the API."""
+class RobotUpdate(BaseModel):
+    """Operator-updated telemetry and non-busy operating state."""
 
+    status: RobotStatus | None = None
+    battery_level: float | None = Field(
+        default=None,
+        ge=0,
+        le=100,
+    )
+    current_location: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=100,
+    )
+
+
+class RobotResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID

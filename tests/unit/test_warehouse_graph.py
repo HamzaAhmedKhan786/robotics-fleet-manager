@@ -1,4 +1,3 @@
-
 """Unit tests for warehouse shortest-path routing."""
 
 import pytest

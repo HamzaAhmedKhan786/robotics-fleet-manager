@@ -1,4 +1,3 @@
-
 """Verify Python can call the Rust scheduling engine."""
 
 import fleet_scheduler
