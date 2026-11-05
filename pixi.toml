@@ -32,6 +32,7 @@ pytest-asyncio = ">=0.24,<2.0"
 pytest-cov = ">=5.0,<8.0"
 ruff = ">=0.7,<1.0"
 pyright = ">=1.1,<2.0"
+maturin = ">=1.0, <2.0"
 
 [tasks]
 python-version = "python --version"

@@ -336,3 +336,6 @@ Desktop.ini
 # ------------------------------------------------------------
 # Keep pixi.toml and pixi.lock committed.
 # Local Pixi environments are ignored by the Python template.
+
+# Rust build artifacts
+**/target/
