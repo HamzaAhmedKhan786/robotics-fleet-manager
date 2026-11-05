@@ -64,6 +64,11 @@ class Robot(Base):
         nullable=False,
     )
 
+    current_location: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+    )
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),

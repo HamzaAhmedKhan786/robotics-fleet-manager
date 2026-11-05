@@ -13,6 +13,11 @@ class RobotCreate(BaseModel):
 
     name: str = Field(min_length=1, max_length=100)
     battery_level: float = Field(default=100.0, ge=0, le=100)
+    current_location: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=100,
+    )
 
 
 class RobotResponse(BaseModel):
@@ -24,5 +29,6 @@ class RobotResponse(BaseModel):
     name: str
     status: RobotStatus
     battery_level: float
+    current_location: str | None
     created_at: datetime
     updated_at: datetime

@@ -18,6 +18,7 @@ async def create_robot(
     robot = Robot(
         name=data.name,
         battery_level=data.battery_level,
+        current_location=data.current_location,
     )
 
     session.add(robot)
