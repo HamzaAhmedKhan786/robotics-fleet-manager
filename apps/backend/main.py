@@ -2,6 +2,7 @@
 
 from fastapi import FastAPI
 
+from apps.backend.api.missions import router as missions_router
 from apps.backend.api.robots import router as robots_router
 
 app = FastAPI(
@@ -11,6 +12,7 @@ app = FastAPI(
 )
 
 app.include_router(robots_router)
+app.include_router(missions_router)
 
 
 @app.get("/health")

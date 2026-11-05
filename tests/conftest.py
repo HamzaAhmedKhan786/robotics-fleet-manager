@@ -20,7 +20,7 @@ TEST_DB_NAME = "robotics_fleet_test"
 
 @pytest.fixture
 async def client() -> AsyncGenerator[AsyncClient, None]:
-    """Create an API client connected only to the test database."""
+    """Provide an HTTP client using only the disposable test database."""
 
     database_url = URL.create(
         drivername="postgresql+asyncpg",
@@ -43,19 +43,28 @@ async def client() -> AsyncGenerator[AsyncClient, None]:
         async with test_session_factory() as session:
             yield session
 
+    async def clean_test_data():
+        async with test_engine.begin() as connection:
+            database = await connection.scalar(text("SELECT current_database()"))
+
+            if database != TEST_DB_NAME:
+                raise RuntimeError("Refusing to clean a non-test database.")
+
+            # Delete dependent records before parent records.
+            await connection.execute(text("DELETE FROM missions"))
+            await connection.execute(text("DELETE FROM robots"))
+
     try:
-        # Safety check before modifying any data.
+        # Verify the database identity before any deletion.
         async with test_engine.connect() as connection:
             database = await connection.scalar(text("SELECT current_database()"))
 
         if database != TEST_DB_NAME:
-            raise RuntimeError("Integration tests must use robotics_fleet_test.")
+            raise RuntimeError("Integration tests require robotics_fleet_test.")
+
+        await clean_test_data()
 
         app.dependency_overrides[get_db] = override_get_db
-
-        # Remove records left by previous test runs.
-        async with test_engine.begin() as connection:
-            await connection.execute(text("DELETE FROM robots"))
 
         transport = ASGITransport(app=app)
 
@@ -66,13 +75,9 @@ async def client() -> AsyncGenerator[AsyncClient, None]:
             yield test_client
 
     finally:
-        app.dependency_overrides.clear()
+        app.dependency_overrides.pop(get_db, None)
 
-        # Clean up records created by the test.
         try:
-            async with test_engine.begin() as connection:
-                database = await connection.scalar(text("SELECT current_database()"))
-                if database == TEST_DB_NAME:
-                    await connection.execute(text("DELETE FROM robots"))
+            await clean_test_data()
         finally:
             await test_engine.dispose()

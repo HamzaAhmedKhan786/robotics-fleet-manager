@@ -7,6 +7,7 @@ from sqlalchemy import URL, engine_from_config, pool
 from alembic import context
 from apps.backend.core.config import settings
 from apps.backend.db.base import Base
+from apps.backend.models.mission import Mission  # noqa: F401
 
 # Import models so Alembic discovers their tables.
 from apps.backend.models.robot import Robot  # noqa: F401
