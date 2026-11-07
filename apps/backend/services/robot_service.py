@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.backend.models.robot import Robot, RobotStatus
 from apps.backend.schemas.robot import RobotCreate, RobotResponse, RobotUpdate
+from apps.backend.services.movement_engine import station_position
 from apps.backend.services.warehouse_graph import build_demo_warehouse
 
 
@@ -39,10 +40,13 @@ async def create_robot(
                 ),
             )
 
+        position = station_position(data.current_location)
         robot = Robot(
             name=data.name,
             battery_level=data.battery_level,
             current_location=data.current_location,
+            position_x=position[0] if position else None,
+            position_z=position[1] if position else None,
         )
 
         session.add(robot)
@@ -132,6 +136,11 @@ async def update_robot(
 
         for field, value in changes.items():
             setattr(robot, field, value)
+        if "current_location" in changes:
+            position = station_position(robot.current_location)
+            robot.position_x = position[0] if position else None
+            robot.position_z = position[1] if position else None
+            robot.movement_progress = 0.0
 
         await session.flush()
 

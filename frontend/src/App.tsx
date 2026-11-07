@@ -574,7 +574,7 @@ export default function App() {
                 void run(
                   "demo",
                   () => api.demoSimulation(),
-                  "Autonomous demo created: 2 robots and 2 missions. Dispatch is automatic.",
+                  "Two demo missions queued. Existing eligible robots are assigned automatically.",
                 )
               }
             >
@@ -665,7 +665,7 @@ export default function App() {
           <div className="table-toolbar"><div className="search-wrap"><Search size={16} /><input aria-label="Search missions" placeholder="Search mission, station or status" value={search} onChange={e => setSearch(e.target.value)} /></div><button className="button secondary" onClick={() => setModal("mission")}><Plus size={16} /> New mission</button></div>
           <MissionsTable missions={filteredMissions} robots={robots} busy={busy} onAction={(mission, action) => void run(mission.id, () => api.missionAction(mission.id, action), `Mission #${short(mission.id)} ${action === "assign" ? "assigned" : action === "start" ? "started" : action === "complete" ? "completed" : "cancelled"}.`)} />
         </Panel>}
-        <footer className="footer"><span><span className="footer-mark">◆</span> FLEETOS / ROBOTICS CONTROL CENTER</span><span>DEMO ENVIRONMENT <span className="footer-separator">·</span> 8s POLLING <span className="footer-separator">·</span> PYTHON + RUST + POSTGRESQL</span></footer>
+        <footer className="footer"><span><span className="footer-mark">◆</span> FLEETOS / ROBOTICS CONTROL CENTER</span><span>DEMO ENVIRONMENT <span className="footer-separator">·</span> 2s POLLING <span className="footer-separator">·</span> PYTHON + RUST + POSTGRESQL</span></footer>
       </div>
     </main>
 

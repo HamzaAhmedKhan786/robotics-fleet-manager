@@ -4,15 +4,13 @@ import { Text } from "@react-three/drei";
 import { useRef } from "react";
 import * as THREE from "three";
 
-import type { Mission, Robot } from "../types";
+import type { Robot } from "../types";
 
 export type Point3D = [number, number, number];
 
 type Props = {
   robot: Robot;
   position: Point3D;
-  route?: Point3D[];
-  mission?: Mission;
   selected?: boolean;
   onSelect?: (robotId: string) => void;
 };
@@ -29,104 +27,20 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
-function routePosition(
-  points: Point3D[],
-  progress: number,
-): Point3D {
-  if (points.length === 0) return [0, 0, 0];
-  if (points.length === 1) return points[0];
-
-  const lengths: number[] = [];
-  let total = 0;
-
-  for (let i = 1; i < points.length; i++) {
-    const a = points[i - 1];
-    const b = points[i];
-    const distance = Math.hypot(
-      b[0] - a[0],
-      b[2] - a[2],
-    );
-
-    lengths.push(distance);
-    total += distance;
-  }
-
-  if (total <= 0) return points[0];
-
-  let remaining = clamp(progress, 0, 1) * total;
-
-  for (let i = 0; i < lengths.length; i++) {
-    const length = lengths[i];
-
-    if (remaining <= length || i === lengths.length - 1) {
-      const fraction =
-        length > 0 ? clamp(remaining / length, 0, 1) : 0;
-
-      const a = points[i];
-      const b = points[i + 1];
-
-      return [
-        THREE.MathUtils.lerp(a[0], b[0], fraction),
-        THREE.MathUtils.lerp(a[1], b[1], fraction),
-        THREE.MathUtils.lerp(a[2], b[2], fraction),
-      ];
-    }
-
-    remaining -= length;
-  }
-
-  return points[points.length - 1];
-}
-
-function progressFromMission(mission?: Mission): number {
-  if (!mission || mission.status !== "in_progress") {
-    return 0;
-  }
-
-  if (!mission.started_at) return 0;
-
-  const started = Date.parse(mission.started_at);
-
-  if (!Number.isFinite(started)) return 0;
-
-  const duration = Number(
-    mission.plan?.duration_seconds ?? 25,
-  );
-
-  if (!Number.isFinite(duration) || duration <= 0) {
-    return 0;
-  }
-
-  const elapsed = (Date.now() - started) / 1000;
-
-  return clamp(elapsed / duration, 0, 1);
-}
-
 export function RobotCart3D({
   robot,
   position,
-  route,
-  mission,
   selected = false,
   onSelect,
 }: Props) {
   const group = useRef<THREE.Group>(null);
 
   const color = STATUS_COLORS[robot.status];
-  const hasRoute = Boolean(route && route.length >= 2);
-
   useFrame((_, delta) => {
     const object = group.current;
     if (!object) return;
-
-    let target: Point3D = position;
-
-    if (hasRoute && route && mission) {
-      target = routePosition(
-        route,
-        progressFromMission(mission),
-      );
-    }
+    // Backend position is authoritative; React only smooths snapshots.
+    const target = position;
 
     const smoothing = 1 - Math.exp(-delta * 9);
 

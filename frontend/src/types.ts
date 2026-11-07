@@ -20,6 +20,10 @@ export type Robot = {
   status: RobotStatus;
   battery_level: number;
   current_location: string | null;
+  position_x: number | null;
+  position_z: number | null;
+  movement_progress: number;
+  position_updated_at: string | null;
   created_at: string;
   updated_at: string;
 };

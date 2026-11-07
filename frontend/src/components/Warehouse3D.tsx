@@ -12,6 +12,7 @@ import type { Mission, Robot, Warehouse } from "../types";
 import { RobotCart3D } from "./RobotCart3D";
 import type { Point3D } from "./RobotCart3D";
 import { Station3D } from "./Station3D";
+import { RobotDetailsPanel } from "./RobotDetailsPanel";
 
 type Props = {
   warehouse: Warehouse;
@@ -132,18 +133,6 @@ function WarehouseScene({
         .sort((a, b) => a.id.localeCompare(b.id)),
     [missions],
   );
-
-  const missionForRobot = useMemo(() => {
-    const mapping = new Map<string, Mission>();
-
-    for (const mission of activeMissions) {
-      if (mission.assigned_robot_id) {
-        mapping.set(mission.assigned_robot_id, mission);
-      }
-    }
-
-    return mapping;
-  }, [activeMissions]);
 
   // Give parked robots small offsets if they share a station.
   const placedRobots = useMemo(() => {
@@ -299,29 +288,16 @@ function WarehouseScene({
 
       {/* Simulated AMR carts */}
       {placedRobots.map(({ robot, position }) => {
-        const mission = missionForRobot.get(robot.id);
-
-        const route = (mission?.plan?.path ?? [])
-          .map(station => getPosition(station))
-          .filter(
-            (point): point is Point3D => Boolean(point),
-          );
-
-        const validTimedRoute =
-          mission?.status === "in_progress" &&
-          Boolean(mission.started_at) &&
-          route.length >= 2;
-
-        const cartPosition =
-          validTimedRoute ? route[0] : position;
+        const cartPosition: Point3D =
+          robot.status === "busy" && robot.position_x !== null && robot.position_z !== null
+            ? [robot.position_x, 0, robot.position_z]
+            : position;
 
         return (
           <RobotCart3D
             key={robot.id}
             robot={robot}
             position={cartPosition}
-            mission={validTimedRoute ? mission : undefined}
-            route={validTimedRoute ? route : undefined}
             selected={robot.id === selectedRobotId}
             onSelect={onSelectRobot}
           />
@@ -427,27 +403,11 @@ export function Warehouse3D({
         </div>
 
         {selectedRobot && (
-          <div className="warehouse-3d-robot-detail">
-            <button
-              type="button"
-              onClick={() => setSelectedRobotId(null)}
-              aria-label="Close selected robot"
-            >
-              ×
-            </button>
-
-            <strong>{selectedRobot.name}</strong>
-
-            <span>
-              Status: {selectedRobot.status}
-            </span>
-            <span>
-              Battery: {Math.round(selectedRobot.battery_level)}%
-            </span>
-            <span>
-              Station: {selectedRobot.current_location ?? "Unknown"}
-            </span>
-          </div>
+          <RobotDetailsPanel
+            robot={selectedRobot}
+            mission={activeMissions.find(m => m.assigned_robot_id === selectedRobot.id)}
+            onClose={() => setSelectedRobotId(null)}
+          />
         )}
       </div>
 
@@ -456,7 +416,7 @@ export function Warehouse3D({
           Drag: rotate · Scroll: zoom · Right-drag: pan
         </span>
         <span>
-          Robot movement: mission-time simulation
+          Robot movement: backend snapshots calculated in Rust
         </span>
       </div>
     </section>

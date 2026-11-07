@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from apps.backend.models.mission import Mission, MissionStatus
 from apps.backend.models.robot import Robot, RobotStatus
 from apps.backend.schemas.mission import MissionResponse
+from apps.backend.services.movement_engine import station_position
 from apps.backend.services.route_planner import calculate_plan
 from apps.backend.services.warehouse_graph import build_demo_warehouse
 
@@ -192,6 +193,11 @@ async def start_mission(
 
         mission.status = MissionStatus.IN_PROGRESS
         mission.started_at = datetime.now(UTC)
+        robot.movement_progress = 0.0
+        origin = station_position(robot.current_location)
+        if origin:
+            robot.position_x, robot.position_z = origin
+            robot.position_updated_at = mission.started_at
 
         await session.flush()
 
@@ -229,6 +235,11 @@ async def complete_mission(
             round(robot.battery_level - consumption, 2),
         )
         robot.current_location = mission.delivery_location
+        position = station_position(mission.delivery_location)
+        if position:
+            robot.position_x, robot.position_z = position
+        robot.movement_progress = 1.0
+        robot.position_updated_at = datetime.now(UTC)
 
         robot.status = (
             RobotStatus.AVAILABLE if robot.battery_level >= 30 else RobotStatus.CHARGING
