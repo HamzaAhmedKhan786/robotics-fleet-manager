@@ -12,9 +12,10 @@ from sqlalchemy import (
     Index,
     Integer,
     String,
+    Text,
     func,
 )
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from apps.backend.db.base import Base
@@ -66,7 +67,7 @@ class Mission(Base):
         Enum(
             MissionStatus,
             name="mission_status",
-            values_callable=lambda enum_cls: [item.value for item in enum_cls],
+            values_callable=lambda cls: [item.value for item in cls],
         ),
         default=MissionStatus.PENDING,
         nullable=False,
@@ -75,6 +76,27 @@ class Mission(Base):
     assigned_robot_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("robots.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+
+    # Stored explanation and simulation plan.
+    plan: Mapped[dict | None] = mapped_column(
+        JSONB,
+        nullable=True,
+    )
+
+    selection_reason: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+    started_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    finished_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
         nullable=True,
     )
 

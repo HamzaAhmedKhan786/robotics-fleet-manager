@@ -1,37 +1,90 @@
 
-# Robotics Fleet Manager
-# Python 3.12
-# Compatibility dependency list
-# Pixi is the primary environment manager.
+# ============================================================
+# FleetOS — Robotics Fleet Manager
+# ============================================================
+#
+# Python: 3.12
+#
+# Primary environment manager: Pixi
+# Main configuration: pixi.toml
+# Lockfile: pixi.lock
+#
+# This file provides a pip-compatible dependency list.
+# Keep it consistent with pixi.toml.
+#
+# Rust scheduler:
+# Built separately through the Rust/PyO3/Maturin toolchain.
+# See crates/fleet-scheduler/Cargo.toml.
+#
+# React frontend:
+# Managed separately in frontend/package.json.
+#
+# Some packages below are reserved for planned features.
+# Their presence does not imply those features are active.
+# ============================================================
 
-# Backend
+
+# ------------------------------------------------------------
+# Backend — implemented
+# ------------------------------------------------------------
+
 fastapi>=0.115,<1.0
 uvicorn[standard]>=0.30,<1.0
 pydantic>=2.9,<3.0
 pydantic-settings>=2.5,<3.0
 
-# Database
+
+# ------------------------------------------------------------
+# Database — implemented
+# ------------------------------------------------------------
+
 sqlalchemy[asyncio]>=2.0,<3.0
 alembic>=1.13,<2.0
 asyncpg>=0.29,<1.0
 psycopg[binary]>=3.2,<4.0
 
-# Redis
+
+# ------------------------------------------------------------
+# Redis — planned integration
+# ------------------------------------------------------------
+#
+# Future caching, event distribution and transient coordination.
+# Redis is not required for the current REST-polling dashboard.
+#
 redis>=5.0,<8.0
 
+
+# ------------------------------------------------------------
 # HTTP and WebSockets
+# ------------------------------------------------------------
+#
+# httpx: HTTP communication and testing.
+# websockets: future real-time fleet event streaming.
+#
 httpx>=0.27,<1.0
 websockets>=13,<17
 
-# Security
+
+# ------------------------------------------------------------
+# Security — planned authentication and authorization
+# ------------------------------------------------------------
+
 PyJWT>=2.9,<3.0
 pwdlib[argon2]>=0.2,<1.0
 
-# Observability
+
+# ------------------------------------------------------------
+# Observability — planned enhancements
+# ------------------------------------------------------------
+
 structlog>=24.0,<27.0
 prometheus-client>=0.21,<1.0
 
-# Development and Testing
+
+# ------------------------------------------------------------
+# Development, linting, typing and testing
+# ------------------------------------------------------------
+
 pytest>=8.0,<10.0
 pytest-asyncio>=0.24,<2.0
 pytest-cov>=5.0,<8.0

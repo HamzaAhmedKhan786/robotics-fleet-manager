@@ -1,3 +1,75 @@
+# ADR-0002 — Local Development Infrastructure
+
+**Status:** Accepted; implementation notes updated 2026-11-07  
+**Original date:** 2026-11-05
+
+## Context
+
+FleetOS is developed on Windows and needs local FastAPI, PostgreSQL, a compiled Rust module and a React/Vite development server. A prior environment assessment aimed to reduce Docker Desktop and WSL2 memory overhead. Native PostgreSQL 18 is already installed in the original developer configuration; the previous ADR noted an 8 GB RAM environment, but this is not a universal minimum or maximum.
+
+## Decision
+
+- Keep PostgreSQL as a **native Windows service** for the primary local setup.
+- Use **Pixi** for Python 3.12, FastAPI, testing and Maturin.
+- Compile `crates/fleet-scheduler` using **Rust + PyO3/Maturin** into the Pixi Python environment.
+- Run **React/TypeScript/Vite** with Node/npm in its `frontend/` directory.
+- Run one Python autonomous worker, integrated into FastAPI lifespan **or** separately, not both. No multi-worker production claim.
+- Make Redis optional (single Docker service only when a feature actually requires it).
+- Keep `compose.yaml` for alternative local infrastructure; don't accidentally start a second PostgreSQL instance on port 5432.
+- Store local credentials in `.env`, not committed files.
+
+## Local topology
+
+```mermaid
+flowchart LR
+    UI[Browser / Vite :5173] --> API[FastAPI :8000]
+    API --> PG[(Native PostgreSQL :5432)]
+    WORKER[One Python autonomous worker] --> PG
+    WORKER --> RUST[Rust PyO3 extension]
+    CACHE[(Optional Redis via Docker)] -.-> API
+```
+
+## Setup outline
+
+```powershell
+pixi install
+$env:POSTGRES_DB = 'robotics_fleet'
+pixi run alembic upgrade head
+pixi run maturin develop --manifest-path crates/fleet-scheduler/Cargo.toml
+pixi run backend
+```
+
+Second terminal:
+
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+For tests, create and migrate the separate `robotics_fleet_test` database. This avoids the test fixture deleting development records.
+
+## Alternatives considered
+
+- **All-in-Docker Compose:** consistent but higher local resource overhead; viable for CI/staging later.
+- **All-native Windows services:** avoids Docker but increases platform-specific dependencies for optional Redis.
+- **Managed cloud database:** adds costs/network dependency, unnecessary for local demonstration.
+- **SQLite:** easier setup, but inappropriate substitute for current PostgreSQL locking and test requirements.
+
+## Consequences and limitations
+
+The developer must ensure native PostgreSQL is running and must manage Rust and Node toolchains. Application availability does not guarantee the autonomous worker is healthy; inspect `/api/v1/system/dispatcher` where present. The local development layout is **not** a secure production reference architecture.
+
+## Revisit conditions
+
+When collaborative development, CI/CD, production deployment, multi-worker scheduling or native performance workloads justify containerized or managed services.
+
+---
+
+## Original specification retained for traceability (historical baseline)
+
+> **Historical reference, not a statement of current implementation.** The original text below is preserved so that no early requirement, design option, setup explanation, or proposed feature is lost. Where it differs from the current sections above, **the current sections take precedence**. In particular, references to Next.js, 20 robots, WebSocket telemetry, continuous movement, Redis integration, A* navigation, authentication, or physical control may describe earlier proposals rather than implemented behavior. Review original setup commands against the current repository before running them.
+
 # ADR 0002 — Local Development Infrastructure
 
 **Status:** Accepted

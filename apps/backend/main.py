@@ -1,27 +1,72 @@
-"""Robotics Fleet Manager FastAPI application."""
+
+"""Robotics Fleet Manager API with local autonomous dispatcher."""
+
+import asyncio
+import logging
+from contextlib import asynccontextmanager, suppress
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from apps.backend.api.demo import router as demo_router
 from apps.backend.api.fleet import router as fleet_router
 from apps.backend.api.missions import router as missions_router
 from apps.backend.api.robots import router as robots_router
+from apps.backend.core.config import settings
+from scripts.auto_worker import main as worker_main
+
+logger = logging.getLogger(__name__)
+
+dispatcher_task: asyncio.Task[None] | None = None
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Start and stop the autonomous dispatcher with FastAPI."""
+
+    global dispatcher_task
+
+    enabled = (
+        settings.simulation_enabled
+        and settings.app_env == "development"
+        and settings.postgres_db != "robotics_fleet_test"
+    )
+
+    if enabled:
+        dispatcher_task = asyncio.create_task(
+            worker_main(),
+            name="autonomous-fleet-dispatcher",
+        )
+        logger.info("Autonomous dispatcher task started.")
+    else:
+        logger.info("Autonomous dispatcher disabled.")
+
+    try:
+        yield
+    finally:
+        if dispatcher_task is not None:
+            dispatcher_task.cancel()
+
+            with suppress(asyncio.CancelledError):
+                await dispatcher_task
+
+            dispatcher_task = None
+
+        logger.info("Autonomous dispatcher stopped.")
+
 
 app = FastAPI(
     title="Robotics Fleet Manager API",
-    description="Fleet orchestration and robot simulation platform",
-    version="0.2.0",
+    description="Autonomous robot fleet orchestration and simulation",
+    version="0.4.0",
+    lifespan=lifespan,
 )
 
-# Development-only frontend origins.
-# Configure production CORS separately before deployment.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
         "http://127.0.0.1:5173",
-        "http://localhost:8501",
-        "http://127.0.0.1:8501",
     ],
     allow_methods=["GET", "POST", "PATCH"],
     allow_headers=["Content-Type", "Authorization"],
@@ -30,6 +75,7 @@ app.add_middleware(
 app.include_router(robots_router)
 app.include_router(missions_router)
 app.include_router(fleet_router)
+app.include_router(demo_router)
 
 
 @app.get("/health")
@@ -37,4 +83,20 @@ async def health_check() -> dict[str, str]:
     return {
         "status": "healthy",
         "service": "robotics-fleet-manager",
+    }
+
+
+@app.get("/api/v1/system/dispatcher")
+async def dispatcher_status() -> dict:
+    """Report whether the local autonomous worker is alive."""
+
+    task = dispatcher_task
+    running = task is not None and not task.done()
+
+    return {
+        "running": running,
+        "simulation_enabled": settings.simulation_enabled,
+        "environment": settings.app_env,
+        "database": settings.postgres_db,
+        "mode": "local_simulation",
     }

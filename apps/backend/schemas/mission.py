@@ -23,5 +23,9 @@ class MissionResponse(BaseModel):
     priority: int
     status: MissionStatus
     assigned_robot_id: UUID | None
+    plan: dict | None = None
+    selection_reason: str | None = None
+    started_at: datetime | None = None
+    finished_at: datetime | None = None
     created_at: datetime
     updated_at: datetime

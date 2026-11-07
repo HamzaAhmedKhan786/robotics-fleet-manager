@@ -1,16 +1,50 @@
 
+# ============================================================
+# FleetOS — Local Infrastructure
+# ============================================================
+#
+# Primary Windows development:
+#   - PostgreSQL 18 runs natively on Windows.
+#   - FastAPI runs through Pixi.
+#   - Rust scheduler runs through the Python/PyO3 integration.
+#   - React/Vite runs through Node.js.
+#   - Redis is optional and is not currently required.
+#
+# Start optional Redis only:
+#   docker compose up -d redis
+#
+# Alternative Docker PostgreSQL:
+#   docker compose up -d postgres
+#
+# IMPORTANT:
+# Do not start Docker PostgreSQL when native PostgreSQL
+# already occupies localhost:5432.
+#
+# The Docker PostgreSQL image is currently version 17,
+# while the primary native development database is version 18.
+# Align versions and test migration compatibility before
+# adopting the container as the primary database.
+#
+# Backend, Rust, frontend and simulation worker are NOT
+# deployed by this Compose configuration.
+# ============================================================
+
 services:
   postgres:
     image: postgres:17-alpine
     restart: unless-stopped
+
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-robotics_fleet}
       POSTGRES_USER: ${POSTGRES_USER:-fleet_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+
     ports:
       - "127.0.0.1:5432:5432"
+
     volumes:
       - postgres_data:/var/lib/postgresql/data
+
     healthcheck:
       test:
         - CMD-SHELL
@@ -22,14 +56,26 @@ services:
   redis:
     image: redis:7-alpine
     restart: unless-stopped
+
+    # Future use:
+    # - Caching
+    # - Event distribution
+    # - Transient coordination
+    # - WebSocket event support
+    #
+    # Redis is not the authoritative mission-state database.
+
     command:
       - redis-server
       - --appendonly
       - "yes"
+
     ports:
       - "127.0.0.1:6379:6379"
+
     volumes:
       - redis_data:/data
+
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s

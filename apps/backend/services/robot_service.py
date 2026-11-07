@@ -3,7 +3,7 @@
 from uuid import UUID
 
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.backend.models.robot import Robot, RobotStatus
@@ -15,16 +15,40 @@ async def create_robot(
     session: AsyncSession,
     data: RobotCreate,
 ) -> Robot:
-    robot = Robot(
-        name=data.name,
-        battery_level=data.battery_level,
-        current_location=data.current_location,
-    )
+    """Register a robot without exceeding the fleet capacity."""
 
-    session.add(robot)
-    await session.commit()
+    async with session.begin():
+        await session.execute(
+            text("SELECT pg_advisory_xact_lock(:lock_id)"),
+            {"lock_id": 2026110501},
+        )
+
+        count = (
+            await session.scalar(
+                select(func.count()).select_from(Robot)
+            )
+        ) or 0
+
+        if count >= 15:
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    "Fleet capacity reached (15 robots). "
+                    "Wait for an available robot or manage "
+                    "existing fleet capacity."
+                ),
+            )
+
+        robot = Robot(
+            name=data.name,
+            battery_level=data.battery_level,
+            current_location=data.current_location,
+        )
+
+        session.add(robot)
+        await session.flush()
+
     await session.refresh(robot)
-
     return robot
 
 
