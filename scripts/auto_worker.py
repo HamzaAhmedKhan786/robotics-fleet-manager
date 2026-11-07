@@ -25,6 +25,7 @@ from apps.backend.services.assignment_service import (
     complete_mission,
     start_mission,
 )
+from scripts.movement_tick import advance_running
 
 logger = logging.getLogger("fleet-worker")
 logging.basicConfig(
@@ -150,6 +151,7 @@ async def tick() -> None:
 
     await dispatch_pending()
     await start_assigned()
+    await advance_running()
     await finish_due()
 
 

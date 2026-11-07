@@ -1,7 +1,8 @@
 """Shortest-path planning and demonstration energy estimates."""
 
-import heapq
 import math
+
+import fleet_scheduler
 
 from apps.backend.services.warehouse_graph import WarehouseGraph
 
@@ -17,43 +18,16 @@ def shortest_path(
     start: str,
     goal: str,
 ) -> tuple[list[str], float] | None:
-    """Return shortest route and total weighted distance."""
-
+    """Find route using Rust. Preserve the existing Python return shape."""
     if start not in graph or goal not in graph:
         return None
-
-    queue: list[tuple[float, str]] = [(0.0, start)]
-    distance = {start: 0.0}
-    previous: dict[str, str] = {}
-
-    while queue:
-        cost, current = heapq.heappop(queue)
-
-        if cost > distance[current]:
-            continue
-
-        if current == goal:
-            path = [goal]
-
-            while path[-1] != start:
-                path.append(previous[path[-1]])
-
-            path.reverse()
-            return path, cost
-
-        for neighbor, weight in graph[current].items():
-            if not math.isfinite(weight) or weight < 0:
+    edges: list[tuple[str, str, float]] = []
+    for station, neighbors in graph.items():
+        for neighbor, weight in neighbors.items():
+            if not math.isfinite(weight) or weight < 0 or neighbor not in graph:
                 raise ValueError("Invalid warehouse edge weight.")
-
-            new_cost = cost + weight
-
-            if new_cost < distance.get(neighbor, math.inf):
-                distance[neighbor] = new_cost
-                previous[neighbor] = current
-                heapq.heappush(queue, (new_cost, neighbor))
-
-    return None
-
+            edges.append((station, neighbor, float(weight)))
+    return fleet_scheduler.shortest_path(edges, start, goal)
 
 def calculate_plan(
     graph: WarehouseGraph,
@@ -75,7 +49,9 @@ def calculate_plan(
 
     route = pickup_path + delivery_path[1:]
     total_distance = pickup_distance + delivery_distance
-    energy_required = round(total_distance * ENERGY_PERCENT_PER_DISTANCE, 2)
+    energy_required = fleet_scheduler.estimate_energy(
+        total_distance, ENERGY_PERCENT_PER_DISTANCE
+    )
     estimated_battery_after = round(battery - energy_required, 2)
 
     feasible = battery >= 30 and estimated_battery_after >= SAFETY_RESERVE_PERCENT

@@ -42,5 +42,9 @@ class RobotResponse(BaseModel):
     status: RobotStatus
     battery_level: float
     current_location: str | None
+    position_x: float | None = None
+    position_z: float | None = None
+    movement_progress: float = 0.0
+    position_updated_at: datetime | None = None
     created_at: datetime
     updated_at: datetime

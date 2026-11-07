@@ -26,6 +26,8 @@ pub fn select_robot(robots: &[Robot]) -> Option<String> {
         .map(|robot| robot.id.clone())
 }
 
+mod movement;
+
 use pyo3::prelude::*;
 
 /// Python-facing wrapper for the Rust scheduler.
@@ -50,6 +52,9 @@ fn select_robot_py(
 #[pymodule]
 fn fleet_scheduler(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(select_robot_py, m)?)?;
+    m.add_function(wrap_pyfunction!(movement::shortest_path_py, m)?)?;
+    m.add_function(wrap_pyfunction!(movement::sample_route_py, m)?)?;
+    m.add_function(wrap_pyfunction!(movement::estimate_energy_py, m)?)?;
     Ok(())
 }
 
