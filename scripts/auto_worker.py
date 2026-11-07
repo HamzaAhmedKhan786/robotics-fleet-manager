@@ -11,7 +11,6 @@ Only one worker process should run for this local demonstration.
 
 import asyncio
 import logging
-from datetime import UTC, datetime
 from uuid import UUID
 
 from fastapi import HTTPException
@@ -20,12 +19,13 @@ from sqlalchemy import select
 from apps.backend.core.config import settings
 from apps.backend.db.session import AsyncSessionLocal
 from apps.backend.models.mission import Mission, MissionStatus
+from apps.backend.services.advanced_tick import advance_running
 from apps.backend.services.assignment_service import (
     assign_mission,
     complete_mission,
     start_mission,
 )
-from scripts.movement_tick import advance_running
+from apps.backend.services.worker_lease import run_exclusive_tick
 
 logger = logging.getLogger("fleet-worker")
 logging.basicConfig(
@@ -101,46 +101,23 @@ async def start_assigned() -> None:
 
 
 async def finish_due() -> None:
-    """Complete simulated missions after their planned duration."""
-
-    now = datetime.now(UTC)
+    """Complete only after persisted simulator progress reaches destination."""
+    from apps.backend.models.robot import Robot
 
     async with AsyncSessionLocal() as session:
         result = await session.execute(
-            select(
-                Mission.id,
-                Mission.started_at,
-                Mission.plan,
-            ).where(
-                Mission.status == MissionStatus.IN_PROGRESS
-            )
+            select(Mission.id)
+            .join(Robot, Mission.assigned_robot_id == Robot.id)
+            .where(Mission.status == MissionStatus.IN_PROGRESS)
+            .where(Robot.movement_progress >= 1.0)
         )
-        running = result.all()
+        complete_ids = list(result.scalars().all())
 
-    for mission_id, started_at, plan in running:
-        if started_at is None:
-            continue
-
-        duration = max(
-            1,
-            int((plan or {}).get("duration_seconds", 25)),
-        )
-
-        elapsed = (now - started_at).total_seconds()
-
-        if elapsed < duration:
-            continue
-
+    for mission_id in complete_ids:
         async with AsyncSessionLocal() as session:
             try:
                 mission = await complete_mission(session, mission_id)
-
-                logger.info(
-                    "COMPLETED mission=%s robot=%s",
-                    mission.id,
-                    mission.assigned_robot_id,
-                )
-
+                logger.info("COMPLETED mission=%s robot=%s", mission.id, mission.assigned_robot_id)
             except HTTPException as exc:
                 if exc.status_code not in (404, 409):
                     raise
@@ -176,7 +153,7 @@ async def main() -> None:
 
     while True:
         try:
-            await tick()
+            await run_exclusive_tick(tick)
 
         except asyncio.CancelledError:
             logger.info("Autonomous worker stopping.")

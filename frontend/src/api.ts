@@ -33,6 +33,7 @@ async function request<T>(
       headers: {
         "Content-Type": "application/json",
         ...init?.headers,
+        ...(sessionStorage.getItem("fleetos_access_token") ? { Authorization: `Bearer ${sessionStorage.getItem("fleetos_access_token")}` } : {}),
       },
       signal: init?.signal,
     });

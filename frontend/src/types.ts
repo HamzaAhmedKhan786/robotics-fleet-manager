@@ -75,6 +75,7 @@ export type FleetSummary = {
 
 export type Warehouse = {
   stations: string[];
+  positions?: Record<string, [number, number, number]>;
   edges: {
     source: string;
     target: string;

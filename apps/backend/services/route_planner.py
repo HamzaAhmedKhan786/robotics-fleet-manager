@@ -4,6 +4,7 @@ import math
 
 import fleet_scheduler
 
+from apps.backend.services.advanced_motion import route_duration
 from apps.backend.services.warehouse_graph import WarehouseGraph
 
 # Demonstration assumptions, not hardware-calibrated values.
@@ -58,7 +59,7 @@ def calculate_plan(
 
     duration = max(
         MIN_SIMULATION_SECONDS,
-        math.ceil(total_distance * SECONDS_PER_DISTANCE),
+        math.ceil(route_duration(route)),
     )
 
     return {

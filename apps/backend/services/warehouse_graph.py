@@ -4,6 +4,8 @@ import heapq
 import math
 from collections.abc import Mapping
 
+from apps.backend.services.advanced_motion import warehouse_edges
+
 type WarehouseGraph = dict[str, dict[str, float]]
 
 
@@ -50,31 +52,5 @@ def shortest_distance(
 
 
 def build_demo_warehouse() -> WarehouseGraph:
-    """Return a sample, bidirectional warehouse layout."""
-    graph: WarehouseGraph = {
-        station: {}
-        for station in (
-            "STATION-A1",
-            "STATION-A2",
-            "STATION-A3",
-            "STATION-B1",
-            "STATION-B2",
-            "STATION-B3",
-        )
-    }
-
-    connections = (
-        ("STATION-A1", "STATION-A2", 10.0),
-        ("STATION-A2", "STATION-A3", 10.0),
-        ("STATION-B1", "STATION-B2", 10.0),
-        ("STATION-B2", "STATION-B3", 10.0),
-        ("STATION-A1", "STATION-B1", 8.0),
-        ("STATION-A2", "STATION-B2", 8.0),
-        ("STATION-A3", "STATION-B3", 8.0),
-    )
-
-    for start, end, distance in connections:
-        graph[start][end] = distance
-        graph[end][start] = distance
-
-    return graph
+    """Warehouse graph weights are derived from 3D station coordinates."""
+    return warehouse_edges()

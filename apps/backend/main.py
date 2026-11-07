@@ -3,13 +3,16 @@
 
 import asyncio
 import logging
+import os
 from contextlib import asynccontextmanager, suppress
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
+from apps.backend.api.advanced_operations import router as advanced_router
 from apps.backend.api.demo import router as demo_router
 from apps.backend.api.fleet import router as fleet_router
+from apps.backend.api.fleet_identity import router as identity_router
 from apps.backend.api.missions import router as missions_router
 from apps.backend.api.robots import router as robots_router
 from apps.backend.core.config import settings
@@ -62,6 +65,54 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+@app.middleware("http")
+async def enforce_mutation_auth(request, call_next):
+    from fastapi.responses import JSONResponse
+
+    from apps.backend.services.fleet_auth import ROLES, verify_token
+    if (os.environ.get("FLEETOS_REQUIRE_AUTH") == "1"
+            and request.url.path.startswith("/api/v1/")
+            and request.url.path != "/api/v1/auth/login"
+            and request.method != "OPTIONS"):
+        header = request.headers.get("authorization", "")
+        if not header.startswith("Bearer "):
+            return JSONResponse({"detail": "Bearer token required"}, status_code=401)
+        try:
+            claims = verify_token(header[7:])
+        except HTTPException:
+            return JSONResponse({"detail": "Invalid token"}, status_code=401)
+        required = "viewer" if request.method in ("GET", "HEAD") else "operator"
+        if ROLES[claims["role"]] < ROLES[required]:
+            return JSONResponse({"detail": "Insufficient role"}, status_code=403)
+    response = await call_next(request)
+    if (os.environ.get("FLEETOS_REQUIRE_AUTH") == "1"
+            and request.url.path.startswith("/api/v1/")
+            and request.method in ("POST", "PATCH", "PUT", "DELETE")):
+        from sqlalchemy import text
+
+        from apps.backend.db.session import AsyncSessionLocal
+        header = request.headers.get("authorization", "")
+        actor = "unknown"
+        if header.startswith("Bearer "):
+            try:
+                actor = verify_token(header[7:])["username"]
+            except HTTPException:
+                actor = "unknown"
+        try:
+            async with AsyncSessionLocal() as audit_session, audit_session.begin():
+                await audit_session.execute(text(
+                    "INSERT INTO fleet_audit_events(actor, action, resource) "
+                    "VALUES (:actor, :action, :resource)"
+                ), {
+                    "actor": actor,
+                    "action": request.method,
+                    "resource": request.url.path[:150],
+                })
+        except Exception:
+            logger.exception("Audit trail insertion failed; investigate database")
+    return response
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -76,6 +127,8 @@ app.include_router(robots_router)
 app.include_router(missions_router)
 app.include_router(fleet_router)
 app.include_router(demo_router)
+app.include_router(advanced_router)
+app.include_router(identity_router)
 
 
 @app.get("/health")

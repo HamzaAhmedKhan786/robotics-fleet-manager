@@ -1,0 +1,65 @@
+name: Advanced Fleet CI
+on:
+  push:
+    branches: [main, feat/advanced-autonomous-fleet]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  rust:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - run: cargo fmt --manifest-path crates/fleet-scheduler/Cargo.toml --check
+      - run: cargo clippy --manifest-path crates/fleet-scheduler/Cargo.toml --all-targets -- -D warnings
+      - run: cargo test --manifest-path crates/fleet-scheduler/Cargo.toml --all-targets
+  python:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: robotics_fleet_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s
+          --health-timeout 5s --health-retries 10
+    env:
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: '5432'
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: robotics_fleet_test
+      JWT_SECRET: ci-only-secret-not-for-deployment
+      SIMULATION_ENABLED: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: prefix-dev/setup-pixi@v0.9.1
+        with:
+          pixi-version: latest
+      - uses: dtolnay/rust-toolchain@stable
+      - run: pixi install
+      - run: pixi run maturin develop --manifest-path crates/fleet-scheduler/Cargo.toml
+      - run: pixi run ruff check apps tests scripts alembic
+      - run: pixi run pyright apps/backend
+      - run: pixi run alembic upgrade head
+      - run: pixi run pytest tests -q --tb=short
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run build

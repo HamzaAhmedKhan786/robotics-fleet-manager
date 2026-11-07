@@ -18,11 +18,11 @@ def test_same_station(graph):
 
 
 def test_direct_connection(graph):
-    assert shortest_distance(graph, "STATION-A1", "STATION-A2") == 10.0
+    assert shortest_distance(graph, "STATION-A1", "STATION-A2") == 6.0
 
 
 def test_shortest_path_across_warehouse(graph):
-    assert shortest_distance(graph, "STATION-A1", "STATION-B3") == 28.0
+    assert shortest_distance(graph, "STATION-A1", "STATION-B3") == 20.0
 
 
 def test_unknown_station(graph):

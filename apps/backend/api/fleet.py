@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from apps.backend.db.session import get_db
 from apps.backend.models.mission import Mission, MissionStatus
 from apps.backend.models.robot import Robot, RobotStatus
+from apps.backend.services.advanced_motion import STATIONS
 from apps.backend.services.warehouse_graph import build_demo_warehouse
 
 router = APIRouter(
@@ -44,6 +45,7 @@ class WarehouseEdge(BaseModel):
 class WarehouseMap(BaseModel):
     stations: list[str]
     edges: list[WarehouseEdge]
+    positions: dict[str, tuple[float, float, float]]
 
 
 @router.get("/summary", response_model=FleetSummary)
@@ -96,4 +98,5 @@ async def warehouse_map() -> WarehouseMap:
     return WarehouseMap(
         stations=list(graph),
         edges=edges,
+        positions={name: (x, 0.0, z) for name, (x, z) in STATIONS.items()},
     )

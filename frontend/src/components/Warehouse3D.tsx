@@ -46,8 +46,9 @@ function normalizeStation(station?: string | null): string {
     : `STATION-${station}`;
 }
 
-function getPosition(station?: string | null) {
-  return POSITIONS[normalizeStation(station)];
+function getPosition(station?: string | null, positions?: Warehouse["positions"]) {
+  const normalized = normalizeStation(station);
+  return positions?.[normalized] ?? POSITIONS[normalized];
 }
 
 function StorageRack({
@@ -140,7 +141,7 @@ function WarehouseScene({
 
     return robots.flatMap(robot => {
       const station = normalizeStation(robot.current_location);
-      const base = getPosition(station);
+      const base = getPosition(station, warehouse.positions);
 
       if (!base) return [];
 
@@ -159,7 +160,7 @@ function WarehouseScene({
         ] as Point3D,
       }];
     });
-  }, [robots]);
+  }, [robots, warehouse.positions]);
 
   return (
     <>
@@ -223,8 +224,8 @@ function WarehouseScene({
 
       {/* General warehouse connection graph */}
       {warehouse.edges.map(edge => {
-        const start = getPosition(edge.source);
-        const end = getPosition(edge.target);
+        const start = getPosition(edge.source, warehouse.positions);
+        const end = getPosition(edge.target, warehouse.positions);
 
         if (!start || !end) return null;
 
@@ -246,7 +247,7 @@ function WarehouseScene({
       {/* Active mission routes */}
       {showRoutes && activeMissions.map((mission, index) => {
         const route = (mission.plan?.path ?? [])
-          .map(station => getPosition(station))
+          .map(station => getPosition(station, warehouse.positions))
           .filter(
             (point): point is Point3D => Boolean(point),
           );
@@ -273,7 +274,7 @@ function WarehouseScene({
 
       {/* Stations */}
       {warehouse.stations.map(station => {
-        const position = getPosition(station);
+        const position = getPosition(station, warehouse.positions);
 
         if (!position) return null;
 

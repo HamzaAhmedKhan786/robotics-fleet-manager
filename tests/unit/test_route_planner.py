@@ -23,7 +23,7 @@ def test_shortest_path_uses_connected_aisles():
 
     assert path[0] == "STATION-A1"
     assert path[-1] == "STATION-B2"
-    assert distance == 18.0
+    assert distance == 14.0
 
 
 def test_plan_calculates_whole_mission_energy():
@@ -38,9 +38,9 @@ def test_plan_calculates_whole_mission_energy():
     )
 
     assert plan is not None
-    assert plan["total_distance"] == 28.0
-    assert plan["energy_required"] == 9.8
-    assert plan["battery_after"] == 70.2
+    assert plan["total_distance"] == 20.0
+    assert plan["energy_required"] == 7.0
+    assert plan["battery_after"] == 73.0
     assert plan["feasible"] is True
     assert plan["path"][0] == "STATION-A1"
     assert plan["path"][-1] == "STATION-B3"

@@ -9,6 +9,8 @@ import {
 import { api } from "./api";
 import type { FleetSummary, Mission, MissionStatus, Robot, RobotStatus, Warehouse } from "./types";
 import { Warehouse3D } from "./components/Warehouse3D";
+import { AdvancedFleetPanel } from "./AdvancedFleetPanel";
+import { FleetLogin } from "./FleetLogin";
 
 type View = "overview" | "robots" | "missions";
 const ROUTES: Record<View, string> = { overview: "/overview", robots: "/robots", missions: "/missions" };
@@ -595,6 +597,8 @@ export default function App() {
         </div>
 
         {view === "overview" && <>
+          <FleetLogin />
+          <AdvancedFleetPanel />
           <div className="overview-grid"><div>
             <div className="warehouse-mode-switch">
               <button
